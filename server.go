@@ -49,7 +49,7 @@ func UDPServer(address string, controlAddress string) {
 		}
 	}()
 
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 2048)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -82,8 +82,9 @@ func handleControlConnection(conn net.Conn) {
 		mu.Lock()
 		packetsPerSecond := packetsLastSecond
 		bitsPerSecond := bytesLastSecond * 8
-		stats := fmt.Sprintf("%spps, %sbps\n", magnitude(packetsPerSecond), magnitudeWithPrecision(bitsPerSecond))
 		mu.Unlock()
+		stats := fmt.Sprintf("%spps, %sbps\n", magnitude(packetsPerSecond), magnitudeWithPrecision(bitsPerSecond))
+
 		_, err := writer.WriteString(stats)
 		if err != nil {
 			fmt.Println("Error writing to control connection:", err)
