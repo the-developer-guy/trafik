@@ -30,6 +30,6 @@ func UDPServer(address string) {
 			fmt.Println("Error reading packet:", err)
 			continue
 		}
-		fmt.Printf("Received packet from %s: %s\n", remoteAddr, string(buffer[:n]))
+		fmt.Printf("Received packet from %s: %s\nSize: %d bytes\n", remoteAddr, string(buffer[:n]), n)
 	}
 }
