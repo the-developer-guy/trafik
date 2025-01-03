@@ -10,8 +10,8 @@ import (
 )
 
 var mu sync.Mutex
-var packetsLastSecond int
-var bytesLastSecond int
+var packetsLastSecond int64
+var bytesLastSecond int64
 
 // UDPServer listens for UDP packets
 func UDPServer(address string, controlAddress string) {
@@ -63,16 +63,15 @@ func UDPServer(address string, controlAddress string) {
 	}()
 
 	for {
-		n, remoteAddr, err := udpConn.ReadFromUDP(buffer)
+		n, _, err := udpConn.ReadFromUDP(buffer)
 		if err != nil {
 			fmt.Println("Error reading UDP packet:", err)
 			continue
 		}
 		mu.Lock()
 		packetsLastSecond++
-		bytesLastSecond += n
+		bytesLastSecond += int64(n)
 		mu.Unlock()
-		fmt.Printf("Received packet from %s: %s\nSize: %d bytes\n", remoteAddr, string(buffer[:n]), n)
 	}
 }
 
@@ -83,7 +82,7 @@ func handleControlConnection(conn net.Conn) {
 		mu.Lock()
 		packetsPerSecond := packetsLastSecond
 		bitsPerSecond := bytesLastSecond * 8
-		stats := fmt.Sprintf("Packets/s: %d, Bits/s: %d\n", packetsPerSecond, bitsPerSecond)
+		stats := fmt.Sprintf("%spps, %sbps\n", magnitude(packetsPerSecond), magnitude(bitsPerSecond))
 		mu.Unlock()
 		_, err := writer.WriteString(stats)
 		if err != nil {

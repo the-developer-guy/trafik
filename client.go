@@ -48,11 +48,11 @@ func RateLimitedUDPClient(address string, rate int, message string, controlAddre
 		fmt.Println("couldn't fill TX buffer")
 	}
 
-	for i := 1; i <= 20; i++ {
+	for i := 1; i <= 40; i++ {
 		<-ticker.C
 		packetCount := int64(math.Pow(2, float64(i)))
 		var burst int64
-		fmt.Printf("sending %d packets\n", packetCount)
+		fmt.Printf("sending %s packets\n", magnitude(packetCount))
 		for burst = 0; burst < packetCount; burst++ {
 			_, err := udpConn.Write(buf)
 			if err != nil {
