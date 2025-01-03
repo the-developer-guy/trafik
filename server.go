@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"sync"
 	"time"
 )
+
+var mu sync.Mutex
+var totalPackets int
+var totalBytes int
 
 // UDPServer listens for UDP packets
 func UDPServer(address string, controlAddress string) {
@@ -51,6 +56,10 @@ func UDPServer(address string, controlAddress string) {
 			fmt.Println("Error reading UDP packet:", err)
 			continue
 		}
+		mu.Lock()
+		totalPackets++
+		totalBytes += n
+		mu.Unlock()
 		fmt.Printf("Received packet from %s: %s\nSize: %d bytes\n", remoteAddr, string(buffer[:n]), n)
 	}
 }
@@ -58,8 +67,11 @@ func UDPServer(address string, controlAddress string) {
 func handleControlConnection(conn net.Conn) {
 	defer conn.Close()
 	writer := bufio.NewWriter(conn)
-	for i := 0; i < 5; i++ {
-		_, err := writer.WriteString(fmt.Sprintf("Control message %d\n", i))
+	for {
+		mu.Lock()
+		stats := fmt.Sprintf("Total packets: %d, Total bytes: %d\n", totalPackets, totalBytes)
+		mu.Unlock()
+		_, err := writer.WriteString(stats)
 		if err != nil {
 			fmt.Println("Error writing to control connection:", err)
 			return
