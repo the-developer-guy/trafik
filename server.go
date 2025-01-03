@@ -10,8 +10,8 @@ import (
 )
 
 var mu sync.Mutex
-var totalPackets int
-var totalBytes int
+var packetsLastSecond int
+var bytesLastSecond int
 
 // UDPServer listens for UDP packets
 func UDPServer(address string, controlAddress string) {
@@ -50,6 +50,18 @@ func UDPServer(address string, controlAddress string) {
 	}()
 
 	buffer := make([]byte, 1024)
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	go func() {
+		for range ticker.C {
+			mu.Lock()
+			packetsLastSecond = 0
+			bytesLastSecond = 0
+			mu.Unlock()
+		}
+	}()
+
 	for {
 		n, remoteAddr, err := udpConn.ReadFromUDP(buffer)
 		if err != nil {
@@ -57,8 +69,8 @@ func UDPServer(address string, controlAddress string) {
 			continue
 		}
 		mu.Lock()
-		totalPackets++
-		totalBytes += n
+		packetsLastSecond++
+		bytesLastSecond += n
 		mu.Unlock()
 		fmt.Printf("Received packet from %s: %s\nSize: %d bytes\n", remoteAddr, string(buffer[:n]), n)
 	}
@@ -69,7 +81,9 @@ func handleControlConnection(conn net.Conn) {
 	writer := bufio.NewWriter(conn)
 	for {
 		mu.Lock()
-		stats := fmt.Sprintf("Total packets: %d, Total bytes: %d\n", totalPackets, totalBytes)
+		packetsPerSecond := packetsLastSecond
+		bitsPerSecond := bytesLastSecond * 8
+		stats := fmt.Sprintf("Packets/s: %d, Bits/s: %d\n", packetsPerSecond, bitsPerSecond)
 		mu.Unlock()
 		_, err := writer.WriteString(stats)
 		if err != nil {
@@ -77,6 +91,6 @@ func handleControlConnection(conn net.Conn) {
 			return
 		}
 		writer.Flush()
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
