@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/rand"
 	"fmt"
+	"math"
 	"net"
 	"time"
 )
@@ -36,22 +38,27 @@ func RateLimitedUDPClient(address string, rate int, message string, controlAddre
 		}
 	}()
 
-	interval := time.Second / time.Duration(rate)
+	interval := time.Second
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	for i := 0; i < 100; i++ { // Send 100 packets
+	buf := make([]byte, 1024)
+	_, err = rand.Read(buf)
+	if err != nil {
+		fmt.Println("couldn't fill TX buffer")
+	}
+
+	for i := 1; i <= 20; i++ {
 		<-ticker.C
-		packet := []byte(fmt.Sprintf("%s %d", message, i))
-		if len(packet) > 1024 {
-			fmt.Println("Error: Packet size exceeds 1024 bytes")
-			return
+		packetCount := int64(math.Pow(2, float64(i)))
+		var burst int64
+		fmt.Printf("sending %d packets\n", packetCount)
+		for burst = 0; burst < packetCount; burst++ {
+			_, err := udpConn.Write(buf)
+			if err != nil {
+				fmt.Println("Error sending packet:", err)
+				return
+			}
 		}
-		_, err := udpConn.Write(packet)
-		if err != nil {
-			fmt.Println("Error sending packet:", err)
-			return
-		}
-		fmt.Printf("Sent packet %d, size: %d bytes\n", i, len(packet))
 	}
 }
