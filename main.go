@@ -12,28 +12,30 @@ func main() {
 	var rootCmd = &cobra.Command{Use: "trafik"}
 
 	var serverCmd = &cobra.Command{
-		Use:   "server <address>",
+		Use:   "server <udp_address> <tcp_address>",
 		Short: "Run as a server",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			address := args[0]
-			UDPServer(address)
+			udpAddress := args[0]
+			tcpAddress := args[1]
+			UDPServer(udpAddress, tcpAddress)
 		},
 	}
 
 	var clientCmd = &cobra.Command{
-		Use:   "client <address> <rate> <message>",
+		Use:   "client <udp_address> <rate> <message> <tcp_address>",
 		Short: "Run as a client",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		Run: func(cmd *cobra.Command, args []string) {
-			address := args[0]
+			udpAddress := args[0]
 			rate, err := strconv.Atoi(args[1])
 			if err != nil {
 				fmt.Println("Invalid rate value:", err)
 				os.Exit(1)
 			}
 			message := args[2]
-			RateLimitedUDPClient(address, rate, message)
+			tcpAddress := args[3]
+			RateLimitedUDPClient(udpAddress, rate, message, tcpAddress)
 		},
 	}
 
