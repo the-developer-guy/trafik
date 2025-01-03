@@ -3,37 +3,43 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go [server|client] [options]")
-		return
+	var rootCmd = &cobra.Command{Use: "trafik"}
+
+	var serverCmd = &cobra.Command{
+		Use:   "server <address>",
+		Short: "Run as a server",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			address := args[0]
+			UDPServer(address)
+		},
 	}
 
-	mode := os.Args[1]
+	var clientCmd = &cobra.Command{
+		Use:   "client <address> <rate> <message>",
+		Short: "Run as a client",
+		Args:  cobra.ExactArgs(3),
+		Run: func(cmd *cobra.Command, args []string) {
+			address := args[0]
+			rate, err := strconv.Atoi(args[1])
+			if err != nil {
+				fmt.Println("Invalid rate value:", err)
+				os.Exit(1)
+			}
+			message := args[2]
+			RateLimitedUDPClient(address, rate, message)
+		},
+	}
 
-	switch mode {
-	case "server":
-		if len(os.Args) != 3 {
-			fmt.Println("Usage: go run main.go server <address>")
-			return
-		}
-		address := os.Args[2]
-		UDPServer(address)
-
-	case "client":
-		if len(os.Args) != 5 {
-			fmt.Println("Usage: go run main.go client <address> <rate> <message>")
-			return
-		}
-		address := os.Args[2]
-		rate := 0
-		fmt.Sscanf(os.Args[3], "%d", &rate)
-		message := os.Args[4]
-		RateLimitedUDPClient(address, rate, message)
-
-	default:
-		fmt.Println("Unknown mode. Use 'server' or 'client'.")
+	rootCmd.AddCommand(serverCmd, clientCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
