@@ -82,7 +82,7 @@ func handleControlConnection(conn net.Conn) {
 		mu.Lock()
 		packetsPerSecond := packetsLastSecond
 		bitsPerSecond := bytesLastSecond * 8
-		stats := fmt.Sprintf("%spps, %sbps\n", magnitude(packetsPerSecond), magnitude(bitsPerSecond))
+		stats := fmt.Sprintf("%spps, %sbps\n", magnitude(packetsPerSecond), magnitudeWithPrecision(bitsPerSecond))
 		mu.Unlock()
 		_, err := writer.WriteString(stats)
 		if err != nil {
